@@ -1,6 +1,7 @@
 import { fail, ok } from "@/lib/api";
 import { requireAdminApi } from "@/lib/auth/guard";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
+import { loadTokenStatuses } from "@/lib/platforms";
 
 async function countByStatus(status: string) {
   const supabase = getSupabaseAdminClient();
@@ -56,6 +57,7 @@ export async function GET() {
       .limit(1)
       .maybeSingle();
     const meta = (secrets?.meta as Record<string, unknown>) ?? {};
+    const tokenStatuses = await loadTokenStatuses();
 
     return ok({
       stats: { scheduled, publishing, failed, published },
@@ -71,6 +73,7 @@ export async function GET() {
         tokensUpdatedAt: secrets?.updated_at ?? null,
         tiktokExpiresAt: secrets?.tiktok_expires_at ?? null,
         instagramExpiresAt: secrets?.instagram_expires_at ?? null,
+        tokenStatuses,
       },
     });
   } catch (error) {

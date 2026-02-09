@@ -17,29 +17,20 @@ type Profile = {
 export function UserMenu() {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const router = useRouter();
-
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadProfile = useCallback(async () => {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
-    if (!session) {
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData.session) {
       setProfile(null);
       setLoading(false);
       return;
     }
-
     try {
-      const response = await fetch("/api/profiles/me");
-      const payload = await response.json();
-      if (response.ok && payload?.data?.profile) {
-        setProfile(payload.data.profile as Profile);
-      } else {
-        setProfile(null);
-      }
+      const res = await fetch("/api/profiles/me");
+      const payload = await res.json();
+      setProfile(payload?.data?.profile ?? null);
     } catch {
       setProfile(null);
     } finally {
@@ -49,8 +40,7 @@ export function UserMenu() {
 
   useEffect(() => {
     void loadProfile();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((_evt, session) => {
       if (!session) {
         setProfile(null);
         router.refresh();
@@ -58,10 +48,7 @@ export function UserMenu() {
       }
       void loadProfile();
     });
-
-    return () => {
-      authListener?.subscription.unsubscribe();
-    };
+    return () => authListener?.subscription.unsubscribe();
   }, [loadProfile, router, supabase]);
 
   async function handleSignOut() {
@@ -72,12 +59,12 @@ export function UserMenu() {
   }
 
   if (loading) {
-    return <div className="h-10 w-44 animate-pulse rounded-md bg-muted" />;
+    return <div className="pill">Loading...</div>;
   }
 
   if (!profile) {
     return (
-      <Button asChild variant="outline">
+      <Button asChild variant="outline" size="sm">
         <Link href="/login">Sign in</Link>
       </Button>
     );
@@ -86,15 +73,15 @@ export function UserMenu() {
   const label = profile.display_name || "Operator";
 
   return (
-    <div className="flex items-center gap-2">
-      <Button asChild size="sm" variant="ghost" className="rounded-full border bg-muted px-3">
-        <Link className="flex items-center gap-2 text-sm font-medium" href="/profile">
-          <UserRound className="h-3.5 w-3.5" />
-          <span>{label}</span>
+    <div className="row">
+      <Button asChild variant="ghost" size="sm" className="row gap-2">
+        <Link href="/profile">
+          <UserRound className="h-4 w-4" />
+          {label}
         </Link>
       </Button>
       <Button onClick={handleSignOut} size="sm" variant="secondary">
-        <LogOut className="mr-2 h-3.5 w-3.5" />
+        <LogOut className="h-4 w-4" />
         Sign out
       </Button>
     </div>

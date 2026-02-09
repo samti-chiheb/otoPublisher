@@ -8,6 +8,7 @@ import {
 import { statusFromPlatformStatuses } from "@/lib/posts";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { env } from "@/lib/env";
+import { loadTokenStatuses, refreshTokensIfNeeded } from "@/lib/platforms";
 
 const DEFAULT_MAX_ATTEMPTS = Number(process.env.PUBLISH_MAX_ATTEMPTS ?? 3);
 const LEASE_SECONDS = 30;
@@ -56,6 +57,12 @@ export async function POST(request: Request) {
 
   let processed = 0;
 
+  const refreshResults = await refreshTokensIfNeeded();
+  const tokenStatuses = await loadTokenStatuses();
+  const tokenStateByPlatform = Object.fromEntries(
+    tokenStatuses.map((t) => [t.platform, t.state] as const),
+  ) as Record<"tiktok" | "instagram", typeof tokenStatuses[number]["state"]>;
+
   for (const post of duePosts ?? []) {
     if (post.status === "scheduled" && new Date(post.schedule_at) > now) {
       continue; // not due yet
@@ -102,6 +109,29 @@ export async function POST(request: Request) {
           .from("posts_platform")
           .update({ status: "failed", last_error: "max_attempts_reached" })
           .eq("id", target.id);
+        continue;
+      }
+
+      const tokenState =
+        target.platform === "instagram"
+          ? tokenStateByPlatform.instagram
+          : tokenStateByPlatform.tiktok;
+      if (tokenState === "missing" || tokenState === "expired") {
+        await supabase
+          .from("posts_platform")
+          .update({
+            status: "failed",
+            last_error: `token_${tokenState}`,
+            lease_expires_at: null,
+            next_retry_at: null,
+          })
+          .eq("id", target.id);
+        await logPublishEvent(
+          post.id,
+          "error",
+          `${target.platform} token ${tokenState}; cannot publish`,
+          target.platform,
+        );
         continue;
       }
 
@@ -188,6 +218,7 @@ export async function POST(request: Request) {
   await logPublishEvent("scheduler", "info", "Scheduler run completed", undefined, {
     processed,
     scanned: duePosts?.length ?? 0,
+    refreshResults,
   });
 
   return ok({ processed, scanned: duePosts?.length ?? 0, lastRunAt: nowIso, nextRunEta: nextEta });

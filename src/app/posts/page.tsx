@@ -99,13 +99,13 @@ export default function PostsPage() {
   });
 
   return (
-    <div className="grid gap-6">
-      <Card className="shadow-[0_12px_30px_rgba(249,168,212,0.18)]">
-        <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="space-y-2">
+    <div className="stack" style={{ gap: 18 }}>
+      <Card>
+        <CardHeader className="row-between">
+          <div className="stack" style={{ gap: 6 }}>
             <CardTitle>Posts</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Filter by status, platform, or date range once data loads.
+            <p style={{ margin: 0, color: "var(--muted)" }}>
+              Filter by status, platform, or search caption.
             </p>
           </div>
           <Button asChild>
@@ -114,9 +114,9 @@ export default function PostsPage() {
         </CardHeader>
       </Card>
 
-      <Card className="shadow-[0_12px_30px_rgba(227,174,255,0.18)]">
-        <CardContent className="space-y-4 pt-6">
-          <div className="grid gap-3 md:grid-cols-4">
+      <Card>
+        <CardContent className="stack" style={{ gap: 16 }}>
+          <div className="grid-3" style={{ alignItems: "flex-start" }}>
             <Select onValueChange={(value) => setStatusFilter(value)} value={statusFilter}>
               <SelectTrigger>
                 <SelectValue placeholder="Status" />
@@ -129,10 +129,7 @@ export default function PostsPage() {
                 <SelectItem value="failed">Failed</SelectItem>
               </SelectContent>
             </Select>
-            <Select
-              onValueChange={(value) => setPlatformFilter(value)}
-              value={platformFilter}
-            >
+            <Select onValueChange={(value) => setPlatformFilter(value)} value={platformFilter}>
               <SelectTrigger>
                 <SelectValue placeholder="Platform" />
               </SelectTrigger>
@@ -142,20 +139,15 @@ export default function PostsPage() {
                 <SelectItem value="tiktok">TikTok</SelectItem>
               </SelectContent>
             </Select>
-            <Input
-              className="md:col-span-2"
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search caption…"
-              value={query}
-            />
+            <Input onChange={(event) => setQuery(event.target.value)} placeholder="Search caption…" value={query} />
           </div>
 
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <div className="row-between" style={{ fontSize: 12, color: "var(--muted)" }}>
             <span>Only admins can trigger manual publish/retry; viewers can browse posts.</span>
-            {!profileLoaded ? <span className="animate-pulse">Checking role…</span> : null}
+            {!profileLoaded ? <span>Checking role…</span> : null}
           </div>
 
-          <div className="overflow-x-auto rounded-2xl border">
+          <div className="table-wrap">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -164,63 +156,55 @@ export default function PostsPage() {
                   <TableHead>Targets</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Error</TableHead>
-                  <TableHead className="w-32 text-right">Actions</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading &&
                   Array.from({ length: 4 }).map((_, idx) => (
                     <TableRow key={idx}>
-                      <TableCell className="py-3">
-                        <Skeleton className="h-4 w-28" />
+                      <TableCell>
+                        <Skeleton className="" />
                       </TableCell>
-                      <TableCell className="py-3">
-                        <Skeleton className="h-4 w-64" />
+                      <TableCell>
+                        <Skeleton className="" />
                       </TableCell>
-                      <TableCell className="py-3">
-                        <Skeleton className="h-4 w-24" />
+                      <TableCell>
+                        <Skeleton className="" />
                       </TableCell>
-                      <TableCell className="py-3">
-                        <Skeleton className="h-4 w-16" />
+                      <TableCell>
+                        <Skeleton className="" />
                       </TableCell>
                     </TableRow>
                   ))}
                 {!loading &&
                   filteredPosts.map((post) => (
                     <TableRow key={post.id}>
-                      <TableCell className="py-3">
-                        {new Date(post.schedule_at).toLocaleString()}
-                      </TableCell>
-                      <TableCell className="py-3">
-                        <Link className="font-medium hover:underline" href={`/posts/${post.id}`}>
+                      <TableCell>{new Date(post.schedule_at).toLocaleString()}</TableCell>
+                      <TableCell>
+                        <Link href={`/posts/${post.id}`} style={{ fontWeight: 600 }}>
                           {post.caption}
                         </Link>
                       </TableCell>
-                      <TableCell className="py-3">
-                        {post.posts_platform?.map((item) => item.platform).join(", ") ?? "-"}
+                      <TableCell>{post.posts_platform?.map((item) => item.platform).join(", ") ?? "-"}</TableCell>
+                      <TableCell>
+                        <Badge variant={post.status === "failed" ? "strong" : "subtle"}>{post.status}</Badge>
                       </TableCell>
-                      <TableCell className="py-3">
-                        <Badge variant={post.status === "failed" ? "destructive" : "secondary"}>
-                          {post.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="py-3 text-xs text-red-600">
+                      <TableCell style={{ fontSize: 12, color: "#b91c1c" }}>
                         {post.status === "failed"
                           ? post.posts_platform?.find((p) => p.last_error)?.last_error ?? "Error"
                           : ""}
                       </TableCell>
-                      <TableCell className="py-3 text-right">
-                        <div className="flex items-center justify-end gap-2">
+                      <TableCell>
+                        <div className="row" style={{ justifyContent: "flex-end" }}>
                           <Button
-                            className="h-8 px-3 text-xs"
-                            disabled={loading || busyId === post.id || !isAdmin}
+                            size="sm"
                             variant="secondary"
+                            disabled={loading || busyId === post.id || !isAdmin}
                             onClick={async (e) => {
                               e.preventDefault();
                               setBusyId(post.id);
-                              const res = await fetch(`/api/posts/${post.id}/publish`, {
-                                method: "POST",
-                              });
+                              const res = await fetch(`/api/posts/${post.id}/publish`, { method: "POST" });
                               const text = await res.text();
                               let payload: { error?: string } = {};
                               try {
@@ -234,10 +218,7 @@ export default function PostsPage() {
                                   variant: "destructive",
                                 });
                               } else {
-                                toast({
-                                  title: "Publish triggered",
-                                  description: "Manual publish started.",
-                                });
+                                toast({ title: "Publish triggered", description: "Manual publish started." });
                                 await loadPosts();
                               }
                             }}
@@ -245,15 +226,13 @@ export default function PostsPage() {
                             {busyId === post.id ? "Working..." : "Publish"}
                           </Button>
                           <Button
-                            className="h-8 px-3 text-xs"
-                            disabled={loading || busyId === post.id || !isAdmin}
+                            size="sm"
                             variant="outline"
+                            disabled={loading || busyId === post.id || !isAdmin}
                             onClick={async (e) => {
                               e.preventDefault();
                               setBusyId(post.id);
-                              const res = await fetch(`/api/posts/${post.id}/retry`, {
-                                method: "POST",
-                              });
+                              const res = await fetch(`/api/posts/${post.id}/retry`, { method: "POST" });
                               const text = await res.text();
                               let payload: { error?: string } = {};
                               try {
@@ -283,12 +262,12 @@ export default function PostsPage() {
           </div>
 
           {!loading && filteredPosts.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No posts match this filter.</p>
+            <p style={{ color: "var(--muted)" }}>No posts match this filter.</p>
           ) : null}
           {!loading && posts.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No posts yet. Import a plan to start.</p>
+            <p style={{ color: "var(--muted)" }}>No posts yet. Import a plan to start.</p>
           ) : null}
-          {error ? <p className="text-sm text-red-600">{error}</p> : null}
+          {error ? <p style={{ color: "#b91c1c" }}>{error}</p> : null}
         </CardContent>
       </Card>
     </div>

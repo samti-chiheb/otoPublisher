@@ -8,13 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 type Profile = {
@@ -28,6 +22,18 @@ type Profile = {
   role: string | null;
 };
 
+const commonTimezones = [
+  "UTC",
+  "America/New_York",
+  "America/Chicago",
+  "America/Denver",
+  "America/Los_Angeles",
+  "Europe/London",
+  "Europe/Paris",
+  "Asia/Dubai",
+  "Asia/Singapore",
+];
+
 export default function ProfilePage() {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const router = useRouter();
@@ -39,17 +45,6 @@ export default function ProfilePage() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const commonTimezones = [
-    "UTC",
-    "America/New_York",
-    "America/Chicago",
-    "America/Denver",
-    "America/Los_Angeles",
-    "Europe/London",
-    "Europe/Paris",
-    "Asia/Dubai",
-    "Asia/Singapore",
-  ];
 
   const loadProfile = useCallback(async () => {
     setLoading(true);
@@ -57,31 +52,28 @@ export default function ProfilePage() {
     const {
       data: { session },
     } = await supabase.auth.getSession();
-
     if (!session) {
       router.push("/login");
       return;
     }
-
     setEmail(session.user.email ?? null);
-
     const response = await fetch("/api/profiles/me");
     const payload = await response.json();
-
     if (!response.ok) {
       setError(payload.error ?? "Failed to load profile");
       setLoading(false);
       return;
     }
-
     setProfile(payload.data.profile);
     setAvatarPreview(payload.data.profile?.avatar_url ?? null);
     setLoading(false);
   }, [router, supabase]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void loadProfile();
+    const id = requestAnimationFrame(() => {
+      void loadProfile();
+    });
+    return () => cancelAnimationFrame(id);
   }, [loadProfile]);
 
   async function handleSave() {
@@ -89,7 +81,6 @@ export default function ProfilePage() {
     setSaving(true);
     setMessage(null);
     setError(null);
-
     const response = await fetch("/api/profiles/me", {
       method: "PUT",
       headers: { "content-type": "application/json" },
@@ -103,15 +94,12 @@ export default function ProfilePage() {
         username: profile.username,
       }),
     });
-
     const payload = await response.json();
     setSaving(false);
-
     if (!response.ok) {
       setError(payload.error ?? "Unable to save profile");
       return;
     }
-
     setProfile(payload.data.profile);
     setAvatarPreview(payload.data.profile.avatar_url ?? null);
     setMessage("Profile saved");
@@ -126,71 +114,91 @@ export default function ProfilePage() {
   const role = profile?.role ?? "user";
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-      <Card className="shadow-[0_18px_40px_rgba(247,140,224,0.18)]">
-        <CardHeader className="space-y-3">
-          <Badge className="w-fit" variant="secondary">
-            Your account
-          </Badge>
+    <div className="grid-2" style={{ alignItems: "start" }}>
+      <Card>
+        <CardHeader className="stack" style={{ gap: 8 }}>
+          <Badge>Your account</Badge>
           <CardTitle className="text-2xl">Profile & Identity</CardTitle>
-          <p className="text-sm text-muted-foreground">
+          <p style={{ margin: 0, color: "var(--muted)" }}>
             Update the name and photo teammates see on posts and activity. Roles decide who can change tokens.
           </p>
         </CardHeader>
-        <CardContent className="space-y-5">
+        <CardContent className="stack" style={{ gap: 14 }}>
           {loading ? (
-            <div className="space-y-3">
-              <div className="h-10 w-full animate-pulse rounded-md bg-muted" />
-              <div className="h-10 w-full animate-pulse rounded-md bg-muted" />
-              <div className="h-10 w-40 animate-pulse rounded-md bg-muted" />
+            <div className="stack">
+              <div className="field" style={{ height: 40, background: "rgba(15,23,42,0.05)" }} />
+              <div className="field" style={{ height: 40, background: "rgba(15,23,42,0.05)" }} />
+              <div className="field" style={{ height: 40, width: 180, background: "rgba(15,23,42,0.05)" }} />
             </div>
           ) : (
             <>
-              <div className="flex items-center gap-4 rounded-md border bg-muted/40 p-4">
-                <div className="relative h-14 w-14 overflow-hidden rounded-full bg-gradient-to-br from-primary/20 to-primary/40">
-                  {avatarPreview ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img alt="Avatar" className="h-full w-full object-cover" src={avatarPreview} />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-sm text-primary">
-                      <Camera className="h-5 w-5" />
-                    </div>
-                  )}
+              <div className="surface section row-between">
+                <div className="row" style={{ gap: 12 }}>
+                  <div
+                    style={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: "50%",
+                      overflow: "hidden",
+                      background: "linear-gradient(135deg, #ffcee9, #ffe6aa)",
+                      display: "grid",
+                      placeItems: "center",
+                    }}
+                  >
+                    {avatarPreview ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img alt="Avatar" src={avatarPreview} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      <Camera style={{ width: 20, height: 20 }} />
+                    )}
+                  </div>
+                  <div className="stack" style={{ gap: 2 }}>
+                    <p style={{ margin: 0, fontWeight: 700 }}>{profile?.display_name || "Set your name"}</p>
+                    <p style={{ margin: 0, fontSize: 13, color: "var(--muted)" }}>
+                      {profile?.username ? `@${profile.username}` : "Add a username"}
+                    </p>
+                    <p style={{ margin: 0, fontSize: 12, color: "var(--muted)" }}>{email ?? "—"}</p>
+                  </div>
                 </div>
-                <div className="space-y-1 text-sm">
-                  <p className="font-medium text-foreground">
-                    {profile?.display_name || "Set your name"}
-                  </p>
-                  <p className="text-muted-foreground">
-                    {profile?.username ? `@${profile.username}` : "Add a username"}
-                  </p>
-                  <p className="text-muted-foreground">{email ?? "—"}</p>
-                </div>
+                <Badge variant="strong">{role}</Badge>
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium" htmlFor="business-name">
-                  Business / brand name
-                </label>
+
+              <div className="stack" style={{ gap: 6 }}>
+                <label style={{ fontSize: 13, fontWeight: 600 }}>Business / brand name</label>
                 <Input
-                  id="business-name"
                   onChange={(event) =>
-                    setProfile((prev) =>
-                      prev ? { ...prev, business_name: event.target.value } : prev,
-                    )
+                    setProfile((prev) => (prev ? { ...prev, business_name: event.target.value } : prev))
                   }
                   placeholder="Sunrise Studio"
                   value={profile?.business_name ?? ""}
                 />
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Timezone</label>
+
+              <div className="stack" style={{ gap: 6 }}>
+                <label style={{ fontSize: 13, fontWeight: 600 }}>Display name</label>
+                <Input
+                  onChange={(event) => setProfile((prev) => (prev ? { ...prev, display_name: event.target.value } : prev))}
+                  placeholder="Your name"
+                  value={profile?.display_name ?? ""}
+                />
+              </div>
+
+              <div className="stack" style={{ gap: 6 }}>
+                <label style={{ fontSize: 13, fontWeight: 600 }}>Username</label>
+                <Input
+                  onChange={(event) => setProfile((prev) => (prev ? { ...prev, username: event.target.value } : prev))}
+                  placeholder="@handle"
+                  value={profile?.username ?? ""}
+                />
+              </div>
+
+              <div className="stack" style={{ gap: 6 }}>
+                <label style={{ fontSize: 13, fontWeight: 600 }}>Timezone</label>
                 <Select
-                  onValueChange={(value) =>
-                    setProfile((prev) => (prev ? { ...prev, timezone: value } : prev))
-                  }
+                  onValueChange={(value) => setProfile((prev) => (prev ? { ...prev, timezone: value } : prev))}
                   value={profile?.timezone ?? "UTC"}
                 >
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger>
                     <SelectValue placeholder="Select timezone" />
                   </SelectTrigger>
                   <SelectContent>
@@ -201,139 +209,72 @@ export default function ProfilePage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">
-                  Scheduling uses this timezone for future posts.
-                </p>
+                <p style={{ margin: 0, fontSize: 12, color: "var(--muted)" }}>Scheduling uses this timezone.</p>
               </div>
-              <div className="flex items-center justify-between rounded-md border bg-muted/40 px-3 py-2">
-                <div>
-                  <p className="text-sm font-medium text-foreground">Email me on failures</p>
-                  <p className="text-xs text-muted-foreground">We’ll send a quick heads-up if a post can’t publish.</p>
+
+              <div className="row-between surface section">
+                <div className="stack" style={{ gap: 2 }}>
+                  <p style={{ margin: 0, fontWeight: 600 }}>Email me on failures</p>
+                  <p style={{ margin: 0, fontSize: 12, color: "var(--muted)" }}>
+                    We’ll send a quick heads-up if a post can’t publish.
+                  </p>
                 </div>
                 <input
                   checked={profile?.notify_on_fail ?? true}
-                  className="h-4 w-4 accent-primary"
                   onChange={(e) =>
-                    setProfile((prev) =>
-                      prev ? { ...prev, notify_on_fail: e.target.checked } : prev,
-                    )
+                    setProfile((prev) => (prev ? { ...prev, notify_on_fail: e.target.checked } : prev))
                   }
                   type="checkbox"
+                  style={{ width: 18, height: 18 }}
                 />
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-muted-foreground">Email</label>
-                <div className="rounded-md border bg-muted px-3 py-2 text-sm">
+
+              <div className="stack" style={{ gap: 6 }}>
+                <label style={{ fontSize: 13, fontWeight: 600 }}>Email</label>
+                <div className="field" style={{ background: "#f1f5f9" }}>
                   {email ?? "—"}
                 </div>
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium" htmlFor="display-name">
-                  Name
-                </label>
-                <Input
-                  id="display-name"
-                  onChange={(event) =>
-                    setProfile((prev) =>
-                      prev ? { ...prev, display_name: event.target.value } : prev,
-                    )
-                  }
-                  placeholder="Content ops"
-                  value={profile?.display_name ?? ""}
-                />
+
+              <div className="stack" style={{ gap: 8 }}>
+                <div className="row" style={{ gap: 8 }}>
+                  <Shield style={{ width: 16, height: 16 }} /> <span style={{ fontSize: 13 }}>Role</span>
+                </div>
+                <div className="field" style={{ background: "#f1f5f9" }}>
+                  {role === "admin" ? "Admin (can manage tokens)" : "Viewer (no token changes)"}
+                </div>
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium" htmlFor="username">
-                  Username
-                </label>
-                <Input
-                  id="username"
-                  onChange={(event) =>
-                    setProfile((prev) =>
-                      prev ? { ...prev, username: event.target.value } : prev,
-                    )
-                  }
-                  placeholder="@yourhandle"
-                  value={profile?.username ?? ""}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Used in activity logs and future team mentions.
-                </p>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium" htmlFor="avatar-url">
-                  Avatar URL (optional)
-                </label>
-                <Input
-                  id="avatar-url"
-                  onChange={(event) =>
-                    setProfile((prev) =>
-                      prev ? { ...prev, avatar_url: event.target.value } : prev,
-                    )
-                  }
-                  placeholder="https://images.example/avatar.png"
-                  value={profile?.avatar_url ?? ""}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Paste an image link. We’ll show a preview above.
-                </p>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Role</label>
-                <Select
-                  onValueChange={(value) =>
-                    setProfile((prev) => (prev ? { ...prev, role: value } : prev))
-                  }
-                  value={role}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select a role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="user">User</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              {error ? <p className="text-sm text-red-600">{error}</p> : null}
-              {message ? <p className="text-sm text-green-700">{message}</p> : null}
-              <div className="flex flex-wrap gap-3">
-                <Button disabled={saving} onClick={handleSave}>
-                  {saving ? "Saving..." : "Save changes"}
+
+              <div className="row" style={{ gap: 10 }}>
+                <Button onClick={handleSave} disabled={saving || loading}>
+                  {saving ? "Saving..." : "Save profile"}
                 </Button>
-                <Button onClick={handleSignOut} type="button" variant="outline">
-                  <LogOut className="mr-2 h-4 w-4" />
+                <Button variant="outline" onClick={handleSignOut}>
+                  <LogOut style={{ width: 16, height: 16 }} />
                   Sign out
                 </Button>
               </div>
+              {message ? <p style={{ color: "var(--muted)" }}>{message}</p> : null}
+              {error ? <p style={{ color: "#b91c1c" }}>{error}</p> : null}
             </>
           )}
         </CardContent>
       </Card>
 
-      <Card className="border-dashed bg-muted/40 shadow-[0_12px_30px_rgba(227,174,255,0.15)]">
-        <CardHeader className="space-y-3">
-          <Badge className="w-fit" variant="outline">
-            Access controls
-          </Badge>
-          <CardTitle className="text-xl">How roles work</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Roles keep tokens safe. Use <code>admin</code> for people who can edit platform tokens and trigger runs.
-            Keep <code>user</code> for schedulers who just need to view and manage posts.
-          </p>
+      <Card className="card-muted">
+        <CardHeader className="stack" style={{ gap: 8 }}>
+          <Badge variant="strong">Tips</Badge>
+          <CardTitle>Make your profile delightful</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3 text-sm">
-          <div className="flex items-center gap-2">
-            <Shield className="h-4 w-4 text-primary" />
-            <span>Sessions sync via Supabase cookies; no custom JWT wiring needed.</span>
+        <CardContent className="stack" style={{ gap: 10 }}>
+          <div className="row" style={{ gap: 8 }}>
+            <UserCog style={{ width: 16, height: 16 }} /> Add a friendly display name and username so teammates recognize you.
           </div>
-          <div className="flex items-center gap-2">
-            <UserCog className="h-4 w-4 text-primary" />
-            <span>Profiles auto-provision after first login.</span>
+          <div className="row" style={{ gap: 8 }}>
+            <Camera style={{ width: 16, height: 16 }} /> Upload an avatar URL (public link) to appear in logs.
           </div>
-          <div className="flex items-center gap-2">
-            <Shield className="h-4 w-4 text-primary" />
-            <span>Future: enforce <code>admin</code> for publisher actions.</span>
+          <div className="row" style={{ gap: 8 }}>
+            <Shield style={{ width: 16, height: 16 }} /> Only admins can edit platform tokens; ask an admin to promote you if needed.
           </div>
         </CardContent>
       </Card>

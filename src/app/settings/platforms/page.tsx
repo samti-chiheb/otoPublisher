@@ -19,6 +19,8 @@ type PlatformSecrets = {
   instagram_expires_at?: string | null;
   updated_at?: string | null;
   meta?: Record<string, unknown> | null;
+  instagram_user_id?: string | null;
+  tiktok_user_id?: string | null;
 };
 
 type Role = "admin" | "user";
@@ -36,6 +38,22 @@ export default function PlatformSettingsPage() {
   const [testing, setTesting] = useState<"tiktok" | "instagram" | null>(null);
 
   const isDisabled = saving || testing !== null || !isAdmin;
+
+  const tokenStatuses = useMemo(() => {
+    const compute = (platform: "tiktok" | "instagram", token?: string | null, expires?: string | null) => {
+      if (!token) return { platform, state: "missing", label: "Missing" };
+      if (!expires) return { platform, state: "ok", label: "Valid" };
+      const diff = new Date(expires).getTime() - Date.now();
+      const daysLeft = Math.floor(diff / (1000 * 60 * 60 * 24));
+      if (diff <= 0) return { platform, state: "expired", label: "Expired" };
+      if (daysLeft <= 10) return { platform, state: "warning", label: `Expiring in ${daysLeft}d` };
+      return { platform, state: "ok", label: `Valid · ${daysLeft}d` };
+    };
+    return [
+      compute("tiktok", secrets.tiktok_access_token, secrets.tiktok_expires_at),
+      compute("instagram", secrets.instagram_access_token, secrets.instagram_expires_at),
+    ];
+  }, [secrets.instagram_access_token, secrets.instagram_expires_at, secrets.tiktok_access_token, secrets.tiktok_expires_at]);
 
   const loadRole = useCallback(async () => {
     try {
@@ -69,7 +87,12 @@ export default function PlatformSettingsPage() {
       setLoading(false);
       return;
     }
-    setSecrets(payload.data?.settings ?? {});
+    const settings = payload.data?.settings ?? {};
+    setSecrets({
+      ...settings,
+      instagram_user_id: settings.meta?.instagram_user_id ?? "",
+      tiktok_user_id: settings.meta?.tiktok_user_id ?? "",
+    });
     setLoading(false);
   }, [toast]);
 
@@ -84,10 +107,15 @@ export default function PlatformSettingsPage() {
 
   const handleSave = useCallback(async () => {
     setSaving(true);
+    const meta = {
+      instagram_user_id: secrets.instagram_user_id || null,
+      tiktok_user_id: secrets.tiktok_user_id || null,
+      ...(secrets.meta ?? {}),
+    };
     const res = await fetch("/api/platforms", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(secrets),
+      body: JSON.stringify({ ...secrets, meta }),
     });
     const payload = await res.json().catch(() => ({}));
     setSaving(false);
@@ -128,9 +156,9 @@ export default function PlatformSettingsPage() {
         name: "TikTok (Business API)",
         steps: [
           "Create an app at https://developers.tiktok.com → App Console.",
-          "Enable Content Posting scope, generate client key/secret.",
-          "Run OAuth to obtain access_token + refresh_token; set a 60-day refresh schedule.",
-          "Paste both tokens here and set the expiry returned by TikTok.",
+          "Enable Content Posting scope; note client key/secret.",
+          "Run OAuth to obtain access_token + refresh_token (60-day).",
+          "Paste both tokens; set expiry; add advertiser/user id in meta.",
         ],
       },
       {
@@ -139,7 +167,7 @@ export default function PlatformSettingsPage() {
           "Create a Meta app (Business) and add Instagram Graph + Pages permissions.",
           "Link a Facebook Page to your Instagram Business/Creator account.",
           "Exchange the short-lived user token for a long-lived token (valid ~60 days).",
-          "Paste access_token here; store refresh token if you generate one; set the expiry.",
+          "Paste access_token; set expiry; add Instagram business_user_id.",
         ],
       },
     ],
@@ -147,53 +175,54 @@ export default function PlatformSettingsPage() {
   );
 
   return (
-    <div className="grid gap-6">
-      <Card className="shadow-[0_22px_50px_rgba(228,95,163,0.18)]">
-        <CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="space-y-1">
+    <div className="stack" style={{ gap: 18 }}>
+      <Card>
+        <CardHeader className="row-between">
+          <div className="stack" style={{ gap: 6 }}>
             <CardTitle className="text-2xl">Platform settings</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Store platform tokens securely. Only admins can edit; viewer accounts can see status only.
+            <p style={{ margin: 0, color: "var(--muted)" }}>
+              Store platform tokens securely. Only admins can edit; viewers can see status only.
             </p>
           </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="row" style={{ gap: 8, color: "var(--muted)", fontSize: 12 }}>
             {isAdmin ? (
               <>
-                <ShieldCheck className="h-4 w-4 text-green-600" />
-                <span>Admin access</span>
+                <ShieldCheck style={{ width: 16, height: 16 }} /> Admin access
               </>
             ) : (
               <>
-                <ShieldAlert className="h-4 w-4 text-amber-600" />
-                <span>{roleChecked ? "Viewer mode" : "Checking role..."}</span>
+                <ShieldAlert style={{ width: 16, height: 16 }} /> {roleChecked ? "Viewer mode" : "Checking role..."}
               </>
             )}
           </div>
         </CardHeader>
       </Card>
 
-      <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-        <Card className="shadow-[0_12px_30px_rgba(227,174,255,0.18)]">
-          <CardHeader className="space-y-2">
-            <Badge className="w-fit" variant="secondary">
-              Tokens vault
-            </Badge>
-            <CardTitle className="text-lg">TikTok + Instagram</CardTitle>
-            <p className="text-sm text-muted-foreground">
+      <section className="grid-2">
+        <Card>
+          <CardHeader className="stack" style={{ gap: 8 }}>
+            <Badge variant="subtle">Tokens vault</Badge>
+            <CardTitle>TikTok + Instagram</CardTitle>
+            <p style={{ margin: 0, color: "var(--muted)" }}>
               Paste current tokens and expiry timestamps. We keep them server-side in Supabase.
             </p>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium">TikTok access token</p>
-                  <Badge variant="outline">Required</Badge>
+          <CardContent className="stack" style={{ gap: 16 }}>
+            <div className="grid-2">
+              <div className="stack" style={{ gap: 10 }}>
+                <div className="row-between">
+                  <p style={{ margin: 0, fontWeight: 600 }}>TikTok access token</p>
+                  <div className="row" style={{ gap: 6 }}>
+                    <Badge>Required</Badge>
+                    <Badge variant={tokenStatuses[0].state === "ok" ? "subtle" : "strong"}>
+                      {tokenStatuses[0].label}
+                    </Badge>
+                  </div>
                 </div>
                 <Textarea
                   disabled={isDisabled}
                   placeholder="access_token"
-                  rows={4}
+                  rows={3}
                   value={secrets.tiktok_access_token ?? ""}
                   onChange={(e) => updateField("tiktok_access_token", e.target.value)}
                 />
@@ -203,8 +232,14 @@ export default function PlatformSettingsPage() {
                   value={secrets.tiktok_refresh_token ?? ""}
                   onChange={(e) => updateField("tiktok_refresh_token", e.target.value)}
                 />
-                <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Expires at</label>
+                <Input
+                  disabled={isDisabled}
+                  placeholder="TikTok user_id / advertiser_id (optional)"
+                  value={secrets.tiktok_user_id ?? ""}
+                  onChange={(e) => updateField("tiktok_user_id", e.target.value)}
+                />
+                <div className="stack" style={{ gap: 4 }}>
+                  <label style={{ fontSize: 12, color: "var(--muted)" }}>Expires at</label>
                   <Input
                     disabled={isDisabled}
                     type="datetime-local"
@@ -212,23 +247,28 @@ export default function PlatformSettingsPage() {
                     onChange={(e) => updateField("tiktok_expires_at", e.target.value ? new Date(e.target.value).toISOString() : null)}
                   />
                 </div>
-                <div className="flex gap-2">
+                <div className="row" style={{ gap: 8 }}>
                   <Button disabled={!isAdmin || testing === "tiktok"} onClick={() => handleTest("tiktok")} size="sm" variant="outline">
-                    <TestTube2 className="mr-2 h-4 w-4" />
+                    <TestTube2 style={{ width: 16, height: 16 }} />
                     {testing === "tiktok" ? "Testing..." : "Test token"}
                   </Button>
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium">Instagram access token</p>
-                  <Badge variant="outline">Required</Badge>
+              <div className="stack" style={{ gap: 10 }}>
+                <div className="row-between">
+                  <p style={{ margin: 0, fontWeight: 600 }}>Instagram access token</p>
+                  <div className="row" style={{ gap: 6 }}>
+                    <Badge>Required</Badge>
+                    <Badge variant={tokenStatuses[1].state === "ok" ? "subtle" : "strong"}>
+                      {tokenStatuses[1].label}
+                    </Badge>
+                  </div>
                 </div>
                 <Textarea
                   disabled={isDisabled}
                   placeholder="access_token (long-lived)"
-                  rows={4}
+                  rows={3}
                   value={secrets.instagram_access_token ?? ""}
                   onChange={(e) => updateField("instagram_access_token", e.target.value)}
                 />
@@ -238,8 +278,14 @@ export default function PlatformSettingsPage() {
                   value={secrets.instagram_refresh_token ?? ""}
                   onChange={(e) => updateField("instagram_refresh_token", e.target.value)}
                 />
-                <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Expires at</label>
+                <Input
+                  disabled={isDisabled}
+                  placeholder="Instagram business user_id"
+                  value={secrets.instagram_user_id ?? ""}
+                  onChange={(e) => updateField("instagram_user_id", e.target.value)}
+                />
+                <div className="stack" style={{ gap: 4 }}>
+                  <label style={{ fontSize: 12, color: "var(--muted)" }}>Expires at</label>
                   <Input
                     disabled={isDisabled}
                     type="datetime-local"
@@ -249,28 +295,21 @@ export default function PlatformSettingsPage() {
                     }
                   />
                 </div>
-                <div className="flex gap-2">
-                  <Button
-                    disabled={!isAdmin || testing === "instagram"}
-                    onClick={() => handleTest("instagram")}
-                    size="sm"
-                    variant="outline"
-                  >
-                    <TestTube2 className="mr-2 h-4 w-4" />
+                <div className="row" style={{ gap: 8 }}>
+                  <Button disabled={!isAdmin || testing === "instagram"} onClick={() => handleTest("instagram")} size="sm" variant="outline">
+                    <TestTube2 style={{ width: 16, height: 16 }} />
                     {testing === "instagram" ? "Testing..." : "Test token"}
                   </Button>
                 </div>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-              <span>
-                Last updated: {secrets.updated_at ? new Date(secrets.updated_at).toLocaleString() : "—"}
-              </span>
-              {!isAdmin && roleChecked ? <Badge variant="outline">View only</Badge> : null}
+            <div className="row" style={{ gap: 10, fontSize: 12, color: "var(--muted)" }}>
+              <span>Last updated: {secrets.updated_at ? new Date(secrets.updated_at).toLocaleString() : "—"}</span>
+              {!isAdmin && roleChecked ? <Badge>View only</Badge> : null}
             </div>
 
-            <div className="flex gap-3">
+            <div className="row" style={{ gap: 10 }}>
               <Button disabled={!isAdmin || saving} onClick={handleSave}>
                 {saving ? "Saving..." : "Save tokens"}
               </Button>
@@ -281,32 +320,30 @@ export default function PlatformSettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-dashed bg-muted/40 shadow-[0_12px_30px_rgba(247,140,224,0.15)]">
-          <CardHeader className="space-y-2">
-            <Badge className="w-fit" variant="outline">
-              Quick token guides
-            </Badge>
-            <CardTitle className="text-lg">How to get the API keys fast</CardTitle>
-            <p className="text-sm text-muted-foreground">
+        <Card className="card-muted">
+          <CardHeader className="stack" style={{ gap: 8 }}>
+            <Badge variant="outline">Quick token guides</Badge>
+            <CardTitle>How to get the API keys fast</CardTitle>
+            <p style={{ margin: 0, color: "var(--muted)" }}>
               Follow these high-level steps; fill the access + refresh tokens above and set the expiry you receive.
             </p>
           </CardHeader>
-          <CardContent className="space-y-4 text-sm">
+          <CardContent className="stack" style={{ gap: 12 }}>
             {guides.map((guide) => (
-              <div key={guide.name} className="rounded-md border bg-background/70 p-4 shadow-sm">
-                <div className="mb-2 flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-primary" />
-                  <p className="font-medium">{guide.name}</p>
+              <div key={guide.name} className="surface section stack">
+                <div className="row" style={{ gap: 8 }}>
+                  <Sparkles style={{ width: 16, height: 16 }} />
+                  <p style={{ margin: 0, fontWeight: 600 }}>{guide.name}</p>
                 </div>
-                <ol className="ml-4 list-decimal space-y-2 text-muted-foreground">
+                <ol style={{ margin: 0, paddingLeft: 18, color: "var(--muted)", lineHeight: 1.6 }}>
                   {guide.steps.map((step, idx) => (
                     <li key={idx}>{step}</li>
                   ))}
                 </ol>
               </div>
             ))}
-            <p className="text-xs text-muted-foreground">
-              Tip: after saving tokens, hit “Test token” to confirm they’re stored; scheduler will surface expiry warnings next.
+            <p style={{ margin: 0, color: "var(--muted)", fontSize: 12 }}>
+              Tip: after saving tokens, hit “Test token” to confirm they’re stored; scheduler will surface expiry warnings.
             </p>
           </CardContent>
         </Card>

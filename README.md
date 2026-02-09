@@ -40,5 +40,6 @@ Social auto-publisher built with Next.js, Supabase, Tailwind, and shadcn/ui.
 - `POST /api/platforms/test`
 
 ## Notes
-- Publisher integrations are currently mocked in `src/lib/publishers/index.ts`.
-- Replace mocks with real TikTok/Instagram API flows next.
+- TikTok/Instagram publishing flows are implemented with pull-from-URL and upload fallback. Provide real tokens + user IDs in Platform Settings.
+- Scheduler: call `POST /api/publish/run?secret=$ADMIN_SECRET` from Vercel cron or Supabase Scheduler. The run records heartbeat + next ETA in `platform_secrets.meta`.
+- Token refresh: set `META_CLIENT_SECRET`, `TIKTOK_CLIENT_KEY`, and `TIKTOK_CLIENT_SECRET` to enable automatic refresh when tokens near expiry. Long-lived IG tokens are refreshed via Meta; TikTok via OAuth refresh_token.

@@ -55,24 +55,21 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="mx-auto grid max-w-3xl gap-6 md:grid-cols-[1.1fr_0.9fr]">
-      <Card className="shadow-[0_22px_50px_rgba(7,89,79,0.14)]">
-        <CardHeader className="space-y-2">
-          <Badge className="w-fit" variant="secondary">
-            Supabase Auth
-          </Badge>
-          <CardTitle className="text-2xl font-semibold">
+    <div className="grid-2" style={{ alignItems: "start" }}>
+      <Card>
+        <CardHeader className="stack" style={{ gap: 8 }}>
+          <Badge variant="strong">Supabase Auth</Badge>
+          <CardTitle className="text-2xl">
             {mode === "signin" ? "Welcome back" : "Create your operator account"}
           </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Sign in with the credentials defined in your Supabase project. Sessions
-            persist in secure cookies; you&apos;ll be redirected to your next task.
+          <p style={{ margin: 0, color: "var(--muted)" }}>
+            Sign in with the credentials defined in your Supabase project. Sessions persist in secure cookies; you&apos;ll be redirected to your next task.
           </p>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="email">
+        <CardContent className="stack" style={{ gap: 12 }}>
+          <form className="stack" style={{ gap: 12 }} onSubmit={handleSubmit}>
+            <div className="stack" style={{ gap: 6 }}>
+              <label style={{ fontSize: 13, fontWeight: 600 }} htmlFor="email">
                 Email
               </label>
               <Input
@@ -85,8 +82,8 @@ export default function LoginPage() {
                 value={email}
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="password">
+            <div className="stack" style={{ gap: 6 }}>
+              <label style={{ fontSize: 13, fontWeight: 600 }} htmlFor="password">
                 Password
               </label>
               <Input
@@ -100,23 +97,23 @@ export default function LoginPage() {
                 value={password}
               />
             </div>
-            {error ? <p className="text-sm text-red-600">{error}</p> : null}
-            {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
-            <Button className="w-full" disabled={busy} type="submit">
+            {error ? <p style={{ color: "#b91c1c", margin: 0 }}>{error}</p> : null}
+            {message ? <p style={{ color: "var(--muted)", margin: 0 }}>{message}</p> : null}
+            <Button disabled={busy} type="submit" className="btn btn-primary" style={{ width: "100%" }}>
               {busy ? "Working..." : mode === "signin" ? "Sign in" : "Create account"}
             </Button>
           </form>
-          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+          <div className="row-between" style={{ fontSize: 12, color: "var(--muted)" }}>
             <span>Supabase URL + anon key must be set in .env.local.</span>
             <Button
-              className="h-8 px-3 text-xs"
+              size="sm"
+              variant="ghost"
               onClick={() => setMode((prev) => (prev === "signin" ? "signup" : "signin"))}
               type="button"
-              variant="ghost"
             >
               {mode === "signin" ? (
                 <>
-                  <UserPlus className="mr-2 h-3.5 w-3.5" /> Need an account?
+                  <UserPlus style={{ width: 14, height: 14 }} /> Need an account?
                 </>
               ) : (
                 "Have an account? Sign in"
@@ -126,29 +123,25 @@ export default function LoginPage() {
         </CardContent>
       </Card>
 
-      <Card className="border-dashed bg-muted/40">
-        <CardHeader className="space-y-3">
-          <Badge className="w-fit" variant="outline">
-            Access policy
-          </Badge>
+      <Card className="card-muted">
+        <CardHeader className="stack" style={{ gap: 8 }}>
+          <Badge variant="outline">Access policy</Badge>
           <CardTitle className="text-xl">Operator roles</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Profiles live in the `profiles` table. The first login creates a profile with
-            role <code>user</code>; promote to <code>admin</code> directly in Supabase if
-            you need stricter controls.
+          <p style={{ margin: 0, color: "var(--muted)" }}>
+            Profiles live in the `profiles` table. The first login creates a profile with role <code>user</code>; promote to <code>admin</code> directly in Supabase if you need stricter controls.
           </p>
         </CardHeader>
-        <CardContent className="space-y-3 text-sm">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4 text-primary" />
+        <CardContent className="stack" style={{ gap: 8, fontSize: 14 }}>
+          <div className="row" style={{ gap: 8 }}>
+            <ShieldCheck style={{ width: 16, height: 16 }} />
             <span>Sessions are stored as HttpOnly cookies; no client secrets.</span>
           </div>
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4 text-primary" />
-            <span>Set <code>SUPABASE_URL</code> / <code>SUPABASE_ANON_KEY</code> / <code>SUPABASE_SERVICE_ROLE_KEY</code>.</span>
+          <div className="row" style={{ gap: 8 }}>
+            <ShieldCheck style={{ width: 16, height: 16 }} />
+            <span>Set SUPABASE_URL / SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY.</span>
           </div>
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4 text-primary" />
+          <div className="row" style={{ gap: 8 }}>
+            <ShieldCheck style={{ width: 16, height: 16 }} />
             <span>Redirects back to <code>{nextPath}</code> after sign in.</span>
           </div>
         </CardContent>
