@@ -104,7 +104,8 @@ export default function LandingPage() {
         className="surface section hero-blob anim"
         data-anim
         style={{
-          minHeight: "100vh",
+          minHeight: "92vh",
+          maxHeight: "100vh",
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
           alignItems: "center",
@@ -162,7 +163,7 @@ export default function LandingPage() {
               width={1000}
               height={720}
               priority
-              style={{ width: "100%", height: "auto", objectFit: "cover" }}
+              style={{ width: "100%", height: "auto", objectFit: "cover", maxHeight: "64vh" }}
             />
           </div>
           <div className="surface section stack">
