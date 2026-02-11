@@ -325,21 +325,49 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="grid-3" data-anim>
-        {pricing.map((tier) => (
-          <Card key={tier.name} className="surface section stack">
-            <div className="row-between">
-              <h3 style={{ margin: 0 }}>{tier.name}</h3>
-              <Badge variant="strong">{tier.price}</Badge>
-            </div>
-            <ul className="list-clean stack" style={{ gap: 6, color: "var(--muted)" }}>
-              {tier.points.map((p) => (
-                <li key={p}>{p}</li>
-              ))}
-            </ul>
-            <Button variant={tier.name === "Team" ? "primary" : "outline"}>Choose {tier.name}</Button>
-          </Card>
-        ))}
+      <section className="surface section stack anim" data-anim>
+        <div className="row-between">
+          <div className="stack" style={{ gap: 6 }}>
+            <Badge variant="strong">Pricing</Badge>
+            <h2 style={{ margin: 0 }}>Pick the vibe that fits</h2>
+            <p style={{ margin: 0, color: "var(--muted)" }}>Simple tiers for solo operators to small teams.</p>
+          </div>
+          <Button variant="outline">Talk to us</Button>
+        </div>
+        <div className="grid-3">
+          {pricing.map((tier) => (
+            <Card
+              key={tier.name}
+              className="surface section stack"
+              style={{
+                borderColor: tier.name === "Team" ? "rgba(255, 155, 208, 0.6)" : undefined,
+                boxShadow: tier.name === "Team" ? "0 20px 44px rgba(255, 155, 208, 0.25)" : undefined,
+              }}
+            >
+              <div className="row-between">
+                <div className="stack" style={{ gap: 2 }}>
+                  <h3 style={{ margin: 0 }}>{tier.name}</h3>
+                  <p style={{ margin: 0, color: "var(--muted)", fontSize: 13 }}>
+                    {tier.name === "Starter"
+                      ? "Great for solo owners"
+                      : tier.name === "Team"
+                        ? "Best for 2-5 collaborators"
+                        : "We’ll tailor for ops teams"}
+                  </p>
+                </div>
+                <Badge variant="strong">{tier.price}</Badge>
+              </div>
+              <ul className="list-clean stack" style={{ gap: 8, color: "var(--muted)" }}>
+                {tier.points.map((p) => (
+                  <li key={p}>{p}</li>
+                ))}
+              </ul>
+              <Button variant={tier.name === "Team" ? "primary" : "outline"}>
+                {tier.name === "Ops" ? "Book a call" : `Choose ${tier.name}`}
+              </Button>
+            </Card>
+          ))}
+        </div>
       </section>
 
       <section className="surface section stack anim" data-anim>
