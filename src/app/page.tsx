@@ -105,64 +105,79 @@ export default function LandingPage() {
         data-anim
         style={{
           minHeight: "100vh",
-          maxHeight: "110vh",
           display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
           alignItems: "center",
-          paddingBlock: 52,
+          gap: 24,
+          paddingBlock: 56,
         }}
       >
-        <div className="hero" style={{ alignItems: "center" }}>
-          <div className="stack" style={{ gap: 16 }}>
-            <Badge variant="strong">Joyful social autopilot</Badge>
-            <h1 style={{ margin: 0, fontSize: 36, lineHeight: 1.15 }}>
-              Schedule TikTok & Instagram with a smile—no devs, no stress.
-            </h1>
-            <p style={{ margin: 0, fontSize: 16, color: "var(--muted)" }}>
-              otoPublisher is built for busy owners and community managers. Plan once, and we keep posts flowing while
-              you focus on the fun parts.
-            </p>
-            <div className="cta">
-              <Button asChild>
-                <Link href="/login">Get started</Link>
-              </Button>
-              <Button asChild variant="ghost">
-                <Link href="/settings/platforms">Platform setup</Link>
-              </Button>
-              <Button asChild variant="outline">
-                <Link href="/dashboard">View dashboard</Link>
-              </Button>
+        <div className="stack" style={{ gap: 18 }}>
+          <div className="pill badge-strong" style={{ width: "fit-content" }}>
+            Joyful social autopilot
+          </div>
+          <h1 style={{ margin: 0, fontSize: 42, lineHeight: 1.1 }}>
+            Never miss a TikTok or Instagram slot again.
+          </h1>
+          <p style={{ margin: 0, fontSize: 17, color: "var(--muted)", maxWidth: 560 }}>
+            otoPublisher watches your tokens, validates media, retries when APIs wobble, and shows live status—so busy owners and community managers can relax.
+          </p>
+          <div className="cta">
+            <Button asChild size="lg">
+              <Link href="/login">Start scheduling</Link>
+            </Button>
+            <Button asChild variant="ghost" size="lg">
+              <Link href="/settings/platforms">Platform setup</Link>
+            </Button>
+            <Button asChild variant="outline" size="lg">
+              <Link href="/dashboard">See dashboard</Link>
+            </Button>
+          </div>
+          <div className="pillbar">
+            {marquee.map((item) => (
+              <span key={item} className="pill">
+                {item}
+              </span>
+            ))}
+          </div>
+          <div className="grid-2">
+            <div className="surface section stack">
+              <p style={{ margin: 0, color: "var(--muted)", fontSize: 13 }}>Live scheduler</p>
+              <p style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>Every 60s with backoff</p>
+              <p style={{ margin: 0, color: "var(--muted)", fontSize: 12 }}>Retries + heartbeats</p>
             </div>
-            <div className="pillbar">
-              {marquee.map((item) => (
-                <span key={item} className="pill">
-                  {item}
-                </span>
-              ))}
+            <div className="surface section stack">
+              <p style={{ margin: 0, color: "var(--muted)", fontSize: 13 }}>Tokens</p>
+              <p style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>TikTok · Instagram</p>
+              <p style={{ margin: 0, color: "var(--muted)", fontSize: 12 }}>Expiry watched with alerts</p>
             </div>
           </div>
-          <div className="card stack" style={{ gap: 12 }}>
-            <div className="surface" style={{ borderRadius: 16, overflow: "hidden" }}>
-              <Image
-                src="/images/hero.png"
-                alt="People scheduling posts happily"
-                width={900}
-                height={640}
-                priority
-                style={{ width: "100%", height: "auto", maxHeight: "60vh", objectFit: "contain" }}
-              />
-            </div>
+        </div>
+
+        <div className="card stack" style={{ gap: 12 }}>
+          <div className="surface" style={{ borderRadius: 20, overflow: "hidden" }}>
+            <Image
+              src="/images/hero.png"
+              alt="People scheduling posts happily"
+              width={1000}
+              height={720}
+              priority
+              style={{ width: "100%", height: "auto", objectFit: "cover" }}
+            />
+          </div>
+          <div className="surface section stack">
             <div className="row-between">
-              <span className="badge-strong badge">Live tokens</span>
-              <span className="badge">24 scheduled posts</span>
+              <span className="badge-strong badge">Preview</span>
+              <span className="badge">24 scheduled</span>
             </div>
             <div className="grid-2">
-              <div className="surface section stack">
+              <div className="stack" style={{ gap: 4 }}>
                 <p style={{ margin: 0, color: "var(--muted)", fontSize: 13 }}>Next run ETA</p>
                 <p style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>03:12</p>
               </div>
-              <div className="surface section stack">
+              <div className="stack" style={{ gap: 4 }}>
                 <p style={{ margin: 0, color: "var(--muted)", fontSize: 13 }}>Tokens</p>
-                <p style={{ margin: 0, fontSize: 14 }}>TikTok · Instagram · Status: Happy</p>
+                <p style={{ margin: 0, fontSize: 14 }}>Happy · Expiry watched</p>
               </div>
             </div>
           </div>
