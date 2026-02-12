@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import "./globals.css";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Fredoka } from "next/font/google";
 import { UserMenu } from "@/components/user-menu";
 import { Toaster } from "@/components/ui/toaster";
 
@@ -15,6 +15,12 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const fredoka = Fredoka({
+  variable: "--font-display",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
+
 export const metadata: Metadata = {
   title: "otoPublisher",
   description: "Schedule and publish content to TikTok and Instagram.",
@@ -23,7 +29,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable}`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} ${fredoka.variable}`}>
         <header className="surface" style={{ position: "sticky", top: 0, zIndex: 10 }}>
           <div className="container row-between" style={{ padding: "14px 0" }}>
             <div className="row" style={{ gap: 12 }}>
